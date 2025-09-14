@@ -1,6 +1,7 @@
-package common
+package services
 
 import (
+	datapkg "ClockAsService/src/data"
 	"database/sql"
 	"time"
 	"github.com/google/uuid"
@@ -22,14 +23,14 @@ func (e *EventStorage) CreateTable() error {
 	return err
 }
 
-func (e *EventStorage) Create(data interface{}) error {
-	event, ok := data.(Event)
+func (e *EventStorage) Create(raw interface{}) error {
+	event, ok := raw.(datapkg.Event)
 	if !ok {
 		return sql.ErrConnDone
 	}
 
 	_, err := e.DB.Exec(
-		"INSERT OR REPLACE INTO events (id, name, description, started_at, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+		"INSERT OR REPLACE INTO events (id, name, description, started_at, created_at) VALUES (?, ?, ?, ?, ?)",
 		uuid.New().String(), event.Name, event.Description, event.StartedAt.Unix(), time.Now().Unix(),
 	)
 	return err
@@ -48,7 +49,7 @@ func (e *EventStorage) List() ([]interface{}, error) {
 	defer rows.Close()
 	var events []interface{}
 	for rows.Next() {
-		var event Event
+		var event datapkg.Event
 		var startedUnix int64
 		if err := rows.Scan(&event.ID, &event.Name, &event.Description, &startedUnix); err != nil {
 			return nil, err
@@ -61,7 +62,7 @@ func (e *EventStorage) List() ([]interface{}, error) {
 
 func (e *EventStorage) FindByID(id string) (interface{}, error) {
 	row := e.DB.QueryRow("SELECT id, name, description, started_at FROM events WHERE id = ?", id)
-	var event Event
+	var event datapkg.Event
 	var startedUnix int64
 	if err := row.Scan(&event.ID, &event.Name, &event.Description, &startedUnix); err != nil {
 		return nil, err

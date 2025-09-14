@@ -1,4 +1,4 @@
-package common
+package services
 
 // StorageService defines basic operations for a storage-backed service
 type StorageService interface {

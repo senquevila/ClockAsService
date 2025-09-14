@@ -1,9 +1,10 @@
-package common
+package services
 
 import (
+	datapkg "ClockAsService/src/data"
 	"database/sql"
-	"time"
 	"github.com/google/uuid"
+	"time"
 )
 
 type AlarmStorage struct {
@@ -22,8 +23,8 @@ func (a *AlarmStorage) CreateTable() error {
 	return err
 }
 
-func (a *AlarmStorage) Create(data interface{}) error {
-	alarm, ok := data.(Alarm)
+func (a *AlarmStorage) Create(raw interface{}) error {
+	alarm, ok := raw.(datapkg.Alarm)
 	if !ok {
 		return sql.ErrConnDone
 	}
@@ -47,7 +48,7 @@ func (a *AlarmStorage) List() ([]interface{}, error) {
 	defer rows.Close()
 	var alarms []interface{}
 	for rows.Next() {
-		var alarm Alarm
+		var alarm datapkg.Alarm
 		var targetUnix, createdUnix int64
 		if err := rows.Scan(&alarm.ID, &alarm.Name, &alarm.Description, &targetUnix, &createdUnix); err != nil {
 			return nil, err
@@ -61,7 +62,7 @@ func (a *AlarmStorage) List() ([]interface{}, error) {
 
 func (a *AlarmStorage) FindByID(id string) (interface{}, error) {
 	row := a.DB.QueryRow("SELECT id, name, description, target, created_at FROM alarms WHERE id = ?", id)
-	var alarm Alarm
+	var alarm datapkg.Alarm
 	var targetUnix, createdUnix int64
 	if err := row.Scan(&alarm.ID, &alarm.Name, &alarm.Description, &targetUnix, &createdUnix); err != nil {
 		return nil, err
