@@ -33,8 +33,13 @@ func TestAlarmStorage_CreateListFindRemove(t *testing.T) {
 		Target:      time.Now().Add(2 * time.Hour),
 	}
 
-	if err := s.Create(original); err != nil {
+	createdRaw, err := s.Create(original)
+	if err != nil {
 		t.Fatalf("Create failed: %v", err)
+	}
+	created, ok := createdRaw.(datapkg.Alarm)
+	if !ok {
+		t.Fatalf("expected datapkg.Alarm from Create, got %T", createdRaw)
 	}
 
 	list, err := s.List()
@@ -45,26 +50,26 @@ func TestAlarmStorage_CreateListFindRemove(t *testing.T) {
 		t.Fatalf("expected 1 alarm after create, got %d", len(list))
 	}
 
-	got, ok := list[0].(datapkg.Alarm)
+	listed, ok := list[0].(datapkg.Alarm)
 	if !ok {
 		t.Fatalf("expected datapkg.Alarm from List, got %T", list[0])
 	}
 
-	if got.Name != original.Name {
-		t.Errorf("expected Name %q, got %q", original.Name, got.Name)
+	if listed.Name != original.Name {
+		t.Errorf("expected Name %q, got %q", original.Name, listed.Name)
 	}
-	if got.Description != original.Description {
-		t.Errorf("expected Description %q, got %q", original.Description, got.Description)
+	if listed.Description != original.Description {
+		t.Errorf("expected Description %q, got %q", original.Description, listed.Description)
 	}
-	if got.Target.Unix() != original.Target.Unix() {
-		t.Errorf("expected Target Unix %d, got %d", original.Target.Unix(), got.Target.Unix())
+	if listed.Target.Unix() != original.Target.Unix() {
+		t.Errorf("expected Target Unix %d, got %d", original.Target.Unix(), listed.Target.Unix())
 	}
-	if got.ID == "" {
+	if created.ID == "" {
 		t.Errorf("expected generated ID, got empty string")
 	}
 
 	// FindByID
-	foundRaw, err := s.FindByID(got.ID)
+	foundRaw, err := s.FindByID(listed.ID)
 	if err != nil {
 		t.Fatalf("FindByID failed: %v", err)
 	}
@@ -72,12 +77,12 @@ func TestAlarmStorage_CreateListFindRemove(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected datapkg.Alarm from FindByID, got %T", foundRaw)
 	}
-	if found.ID != got.ID {
-		t.Errorf("expected ID %s, got %s", got.ID, found.ID)
+	if found.ID != listed.ID {
+		t.Errorf("expected ID %s, got %s", listed.ID, found.ID)
 	}
 
 	// Remove
-	if err := s.Remove(got.ID); err != nil {
+	if err := s.Remove(listed.ID); err != nil {
 		t.Fatalf("Remove failed: %v", err)
 	}
 	listAfter, err := s.List()
@@ -91,7 +96,8 @@ func TestAlarmStorage_CreateListFindRemove(t *testing.T) {
 
 func TestAlarmStorage_Create_WrongType(t *testing.T) {
 	s := setupAlarmStorage(t)
-	if err := s.Create("not an alarm"); err == nil {
+	_, err := s.Create("not an alarm")
+	if err == nil {
 		t.Fatalf("expected error when creating with wrong type, got nil")
 	}
 }

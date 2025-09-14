@@ -3,8 +3,9 @@ package services
 import (
 	datapkg "ClockAsService/src/data"
 	"database/sql"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type AlarmStorage struct {
@@ -23,16 +24,23 @@ func (a *AlarmStorage) CreateTable() error {
 	return err
 }
 
-func (a *AlarmStorage) Create(raw interface{}) error {
+func (a *AlarmStorage) Create(raw interface{}) (interface{}, error) {
 	alarm, ok := raw.(datapkg.Alarm)
 	if !ok {
-		return sql.ErrConnDone
+		return nil, sql.ErrConnDone
 	}
+	id := uuid.New().String()
+	created := time.Now()
 	_, err := a.DB.Exec(
 		"INSERT OR REPLACE INTO alarms (id, name, description, target, created_at) VALUES (?, ?, ?, ?, ?)",
-		uuid.New().String(), alarm.Name, alarm.Description, alarm.Target.Unix(), time.Now().Unix(),
+		id, alarm.Name, alarm.Description, alarm.Target.Unix(), created.Unix(),
 	)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	alarm.ID = id
+	alarm.CreatedAt = created
+	return alarm, nil
 }
 
 func (a *AlarmStorage) Remove(id string) error {

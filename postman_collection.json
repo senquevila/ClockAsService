@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "ClockAsService API",
+    "_postman_id": "",
+    "description": "Collection for ClockAsService (local server on http://localhost:8080)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Alarm",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Morning Alarm\",\n  \"description\": \"Wake up\",\n  \"target\": \"2025-09-15T07:30:00Z\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/alarms/create",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "alarms",
+            "create"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Alarm Countdown",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/alarms/countdown?id=<alarm-id>",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["alarms","countdown"],
+          "query": [
+            {"key":"id","value":"<alarm-id>"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Event",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key":"Content-Type","value":"application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Workout\",\n  \"description\": \"Morning workout\"\n}",
+          "options": {"raw": {"language": "json"}}
+        },
+        "url": {
+          "raw": "http://localhost:8080/events/create",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["events","create"]
+        }
+      }
+    },
+    {
+      "name": "Get Event Elapsed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/events/elapsed?id=<event-id>",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["events","elapsed"],
+          "query": [ {"key":"id","value":"<event-id>"} ]
+        }
+      }
+    }
+    ,
+    {
+      "name": "List Alarms",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/alarms/list",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["alarms","list"]
+        }
+      }
+    },
+    {
+      "name": "List Events",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/events/list",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["events","list"]
+        }
+      }
+    }
+  ]
+}

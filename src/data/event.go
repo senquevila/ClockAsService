@@ -8,4 +8,5 @@ type Event struct {
 	Name        string
 	Description string
 	StartedAt   time.Time
+	CreatedAt   time.Time
 }

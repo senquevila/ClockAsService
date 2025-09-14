@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: ClockAsService API
+  version: "1.0.0"
+  description: API for creating alarms and events and querying countdown/elapsed time
+servers:
+  - url: http://localhost:8080
+paths:
+  /alarms/create:
+    post:
+      summary: Create a new alarm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlarmRequest'
+            example:
+              name: "Morning Alarm"
+              description: "Wake up"
+              target: "2025-09-15T07:30:00Z"
+      responses:
+        '201':
+          description: Alarm created
+        '400':
+          description: Invalid request
+        '500':
+          description: Failed to create alarm
+  /alarms/countdown:
+    get:
+      summary: Get countdown (seconds) until alarm target
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Alarm ID
+      responses:
+        '200':
+          description: Countdown returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  countdown:
+                    type: number
+                    description: Seconds remaining until target
+              example:
+                id: "<alarm-id>"
+                countdown: 3600
+        '404':
+          description: Alarm not found
+        '500':
+          description: Internal server error
+  /alarms/list:
+    get:
+      summary: List all alarms
+      responses:
+        '200':
+          description: A list of alarms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alarm'
+        '500':
+          description: Internal server error
+  /events/create:
+    post:
+      summary: Create a new event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRequest'
+            example:
+              name: "Workout"
+              description: "Morning workout"
+      responses:
+        '201':
+          description: Event created
+        '400':
+          description: Invalid request
+        '500':
+          description: Failed to create event
+  /events/elapsed:
+    get:
+      summary: Get elapsed seconds since event started
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Event ID
+      responses:
+        '200':
+          description: Elapsed returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  elapsed:
+                    type: number
+                    description: Seconds elapsed since event started
+              example:
+                id: "<event-id>"
+                elapsed: 120.5
+        '404':
+          description: Event not found
+        '500':
+          description: Internal server error
+  /events/list:
+    get:
+      summary: List all events
+      responses:
+        '200':
+          description: A list of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    AlarmRequest:
+      type: object
+      required:
+        - name
+        - description
+        - target
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        target:
+          type: string
+          format: date-time
+          description: ISO8601 timestamp for the alarm target
+    EventRequest:
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    Alarm:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        target:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        startedAt:
+          type: string
+          format: date-time

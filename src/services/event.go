@@ -4,6 +4,7 @@ import (
 	datapkg "ClockAsService/src/data"
 	"database/sql"
 	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -23,17 +24,25 @@ func (e *EventStorage) CreateTable() error {
 	return err
 }
 
-func (e *EventStorage) Create(raw interface{}) error {
+func (e *EventStorage) Create(raw interface{}) (interface{}, error) {
 	event, ok := raw.(datapkg.Event)
 	if !ok {
-		return sql.ErrConnDone
+		return nil, sql.ErrConnDone
 	}
 
+	id := uuid.New().String()
+	created := time.Now()
 	_, err := e.DB.Exec(
 		"INSERT OR REPLACE INTO events (id, name, description, started_at, created_at) VALUES (?, ?, ?, ?, ?)",
-		uuid.New().String(), event.Name, event.Description, event.StartedAt.Unix(), time.Now().Unix(),
+		id, event.Name, event.Description, event.StartedAt.Unix(), created.Unix(),
 	)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	event.ID = id
+	// store created time for completeness even if not used by Event struct now
+	// add CreatedAt field to datapkg.Event if desired
+	return event, nil
 }
 
 func (e *EventStorage) Remove(id string) error {

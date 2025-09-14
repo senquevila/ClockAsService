@@ -33,8 +33,13 @@ func TestEventStorage_CreateListFindRemove(t *testing.T) {
 		StartedAt:   time.Now().Add(-30 * time.Minute),
 	}
 
-	if err := s.Create(original); err != nil {
+	createdRaw, err := s.Create(original)
+	if err != nil {
 		t.Fatalf("Create failed: %v", err)
+	}
+	created, ok := createdRaw.(datapkg.Event)
+	if !ok {
+		t.Fatalf("expected datapkg.Event from Create, got %T", createdRaw)
 	}
 
 	list, err := s.List()
@@ -59,7 +64,7 @@ func TestEventStorage_CreateListFindRemove(t *testing.T) {
 	if got.StartedAt.Unix() != original.StartedAt.Unix() {
 		t.Errorf("expected StartedAt Unix %d, got %d", original.StartedAt.Unix(), got.StartedAt.Unix())
 	}
-	if got.ID == "" {
+	if created.ID == "" {
 		t.Errorf("expected generated ID, got empty string")
 	}
 
@@ -91,7 +96,8 @@ func TestEventStorage_CreateListFindRemove(t *testing.T) {
 
 func TestEventStorage_Create_WrongType(t *testing.T) {
 	s := setupEventStorage(t)
-	if err := s.Create(12345); err == nil {
+	_, err := s.Create(12345)
+	if err == nil {
 		t.Fatalf("expected error when creating with wrong type, got nil")
 	}
 }

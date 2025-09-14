@@ -1,8 +1,8 @@
 package data
 
 import (
-	"testing"
 	"github.com/google/uuid"
+	"testing"
 )
 
 func TestEventCreation(t *testing.T) {
