@@ -1,24 +1,31 @@
 package main
 
+import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
-	"ClockAsService/src/common"
-	"github.com/google/uuid"
+
+	datapkg "ClockAsService/src/data"
+	"ClockAsService/src/services"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
-var service *common.Service
-
-// AlarmRequest is used for creating/updating alarms
+// request shapes
+type AlarmRequest struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Target      time.Time `json:"target"`
 }
 
-// EventRequest is used for creating/updating events
+type EventRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
+
+var alarmStore *services.AlarmStorage
+var eventStore *services.EventStorage
 
 func createAlarmHandler(w http.ResponseWriter, r *http.Request) {
 	var req AlarmRequest
@@ -26,8 +33,12 @@ func createAlarmHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	id := uuid.New().String()
-	if err := service.CreateAlarm(id, req.Name, req.Description, req.Target); err != nil {
+	alarm := datapkg.Alarm{
+		Name:        req.Name,
+		Description: req.Description,
+		Target:      req.Target,
+	}
+	if err := alarmStore.Create(alarm); err != nil {
 		http.Error(w, "Failed to create alarm", http.StatusInternalServerError)
 		return
 	}
@@ -36,11 +47,18 @@ func createAlarmHandler(w http.ResponseWriter, r *http.Request) {
 
 func getAlarmCountdownHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	if countdown, ok := service.GetAlarmCountdown(id); ok {
-		json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "countdown": countdown.Seconds()})
-	} else {
+	raw, err := alarmStore.FindByID(id)
+	if err != nil {
 		http.Error(w, "Alarm not found", http.StatusNotFound)
+		return
 	}
+	alarm, ok := raw.(datapkg.Alarm)
+	if !ok {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+	countdown := time.Until(alarm.Target)
+	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "countdown": countdown.Seconds()})
 }
 
 func createEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,8 +67,12 @@ func createEventHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	id := uuid.New().String()
-	if err := service.CreateEvent(id, req.Name, req.Description); err != nil {
+	event := datapkg.Event{
+		Name:        req.Name,
+		Description: req.Description,
+		StartedAt:   time.Now(),
+	}
+	if err := eventStore.Create(event); err != nil {
 		http.Error(w, "Failed to create event", http.StatusInternalServerError)
 		return
 	}
@@ -59,17 +81,34 @@ func createEventHandler(w http.ResponseWriter, r *http.Request) {
 
 func getEventElapsedHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	if elapsed, ok := service.GetEventElapsed(id); ok {
-		json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "elapsed": elapsed.Seconds()})
-	} else {
+	raw, err := eventStore.FindByID(id)
+	if err != nil {
 		http.Error(w, "Event not found", http.StatusNotFound)
+		return
 	}
+	event, ok := raw.(datapkg.Event)
+	if !ok {
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+	elapsed := time.Since(event.StartedAt)
+	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "elapsed": elapsed.Seconds()})
 }
 
 func main() {
-	var err error
-	service, err = common.NewService("clock.db")
+	db, err := sql.Open("sqlite3", "clock.db")
 	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	alarmStore = &services.AlarmStorage{DB: db}
+	eventStore = &services.EventStorage{DB: db}
+
+	if err := alarmStore.CreateTable(); err != nil {
+		panic(err)
+	}
+	if err := eventStore.CreateTable(); err != nil {
 		panic(err)
 	}
 
