@@ -30,7 +30,7 @@ func (a *AlarmStorage) Create(raw interface{}) (interface{}, error) {
 		return nil, sql.ErrConnDone
 	}
 	id := uuid.New().String()
-	created := time.Now()
+	created := time.Now().UTC()
 	_, err := a.DB.Exec(
 		"INSERT OR REPLACE INTO alarms (id, name, description, target, created_at) VALUES (?, ?, ?, ?, ?)",
 		id, alarm.Name, alarm.Description, alarm.Target.Unix(), created.Unix(),
@@ -61,8 +61,8 @@ func (a *AlarmStorage) List() ([]interface{}, error) {
 		if err := rows.Scan(&alarm.ID, &alarm.Name, &alarm.Description, &targetUnix, &createdUnix); err != nil {
 			return nil, err
 		}
-		alarm.Target = time.Unix(targetUnix, 0)
-		alarm.CreatedAt = time.Unix(createdUnix, 0)
+		alarm.Target = time.Unix(targetUnix, 0).UTC()
+		alarm.CreatedAt = time.Unix(createdUnix, 0).UTC()
 		alarms = append(alarms, alarm)
 	}
 	return alarms, nil

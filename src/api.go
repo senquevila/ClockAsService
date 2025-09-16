@@ -40,9 +40,10 @@ func createAlarmHandler(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	// validate target must be in the future
-	if req.Target.Before(time.Now()) {
-		jsonError(w, "Target must be in the future", http.StatusBadRequest)
+	// normalize target to UTC and validate it must be in the future (server UTC)
+	req.Target = req.Target.UTC()
+	if req.Target.Before(time.Now().UTC()) {
+		jsonError(w, "Target must be in the future (in UTC)", http.StatusBadRequest)
 		return
 	}
 	alarm := datapkg.Alarm{
