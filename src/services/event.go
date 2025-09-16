@@ -40,8 +40,8 @@ func (e *EventStorage) Create(raw interface{}) (interface{}, error) {
 		return nil, err
 	}
 	event.ID = id
-	// store created time for completeness even if not used by Event struct now
-	// add CreatedAt field to datapkg.Event if desired
+	// store created time on the returned object so callers see it
+	event.CreatedAt = created
 	return event, nil
 }
 
@@ -51,7 +51,7 @@ func (e *EventStorage) Remove(id string) error {
 }
 
 func (e *EventStorage) List() ([]interface{}, error) {
-	rows, err := e.DB.Query("SELECT id, name, description, started_at FROM events")
+	rows, err := e.DB.Query("SELECT id, name, description, started_at, created_at FROM events")
 	if err != nil {
 		return nil, err
 	}
@@ -59,23 +59,25 @@ func (e *EventStorage) List() ([]interface{}, error) {
 	var events []interface{}
 	for rows.Next() {
 		var event datapkg.Event
-		var startedUnix int64
-		if err := rows.Scan(&event.ID, &event.Name, &event.Description, &startedUnix); err != nil {
+		var startedUnix, createdUnix int64
+		if err := rows.Scan(&event.ID, &event.Name, &event.Description, &startedUnix, &createdUnix); err != nil {
 			return nil, err
 		}
 		event.StartedAt = time.Unix(startedUnix, 0)
+		event.CreatedAt = time.Unix(createdUnix, 0)
 		events = append(events, event)
 	}
 	return events, nil
 }
 
 func (e *EventStorage) FindByID(id string) (interface{}, error) {
-	row := e.DB.QueryRow("SELECT id, name, description, started_at FROM events WHERE id = ?", id)
+	row := e.DB.QueryRow("SELECT id, name, description, started_at, created_at FROM events WHERE id = ?", id)
 	var event datapkg.Event
-	var startedUnix int64
-	if err := row.Scan(&event.ID, &event.Name, &event.Description, &startedUnix); err != nil {
+	var startedUnix, createdUnix int64
+	if err := row.Scan(&event.ID, &event.Name, &event.Description, &startedUnix, &createdUnix); err != nil {
 		return nil, err
 	}
 	event.StartedAt = time.Unix(startedUnix, 0)
+	event.CreatedAt = time.Unix(createdUnix, 0)
 	return event, nil
 }

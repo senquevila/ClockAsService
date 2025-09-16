@@ -27,10 +27,22 @@ type EventRequest struct {
 var alarmStore *services.AlarmStorage
 var eventStore *services.EventStorage
 
+// helper to write JSON error responses
+func jsonError(w http.ResponseWriter, msg string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+}
+
 func createAlarmHandler(w http.ResponseWriter, r *http.Request) {
 	var req AlarmRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		jsonError(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	// validate target must be in the future
+	if req.Target.Before(time.Now()) {
+		jsonError(w, "Target must be in the future", http.StatusBadRequest)
 		return
 	}
 	alarm := datapkg.Alarm{
@@ -40,12 +52,12 @@ func createAlarmHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	createdRaw, err := alarmStore.Create(alarm)
 	if err != nil {
-		http.Error(w, "Failed to create alarm", http.StatusInternalServerError)
+		jsonError(w, "Failed to create alarm", http.StatusInternalServerError)
 		return
 	}
 	created, ok := createdRaw.(datapkg.Alarm)
 	if !ok {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		jsonError(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -57,23 +69,28 @@ func getAlarmCountdownHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	raw, err := alarmStore.FindByID(id)
 	if err != nil {
-		http.Error(w, "Alarm not found", http.StatusNotFound)
+		jsonError(w, "Alarm not found", http.StatusNotFound)
 		return
 	}
 	alarm, ok := raw.(datapkg.Alarm)
 	if !ok {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		jsonError(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
 	countdown := time.Until(alarm.Target)
+	// don't return negative countdowns; clamp to zero when target is reached or passed
+	seconds := countdown.Seconds()
+	if seconds < 0 {
+		seconds = 0
+	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "countdown": countdown.Seconds()})
+	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "countdown": seconds, "alarm": alarm})
 }
 
 func createEventHandler(w http.ResponseWriter, r *http.Request) {
 	var req EventRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		jsonError(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 	event := datapkg.Event{
@@ -83,12 +100,12 @@ func createEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	createdRaw, err := eventStore.Create(event)
 	if err != nil {
-		http.Error(w, "Failed to create event", http.StatusInternalServerError)
+		jsonError(w, "Failed to create event", http.StatusInternalServerError)
 		return
 	}
 	created, ok := createdRaw.(datapkg.Event)
 	if !ok {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		jsonError(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -100,23 +117,23 @@ func getEventElapsedHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	raw, err := eventStore.FindByID(id)
 	if err != nil {
-		http.Error(w, "Event not found", http.StatusNotFound)
+		jsonError(w, "Event not found", http.StatusNotFound)
 		return
 	}
 	event, ok := raw.(datapkg.Event)
 	if !ok {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		jsonError(w, "Internal error", http.StatusInternalServerError)
 		return
 	}
 	elapsed := time.Since(event.StartedAt)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "elapsed": elapsed.Seconds()})
+	json.NewEncoder(w).Encode(map[string]interface{}{"elapsed": elapsed.Seconds(), "event": event})
 }
 
 func listAlarmsHandler(w http.ResponseWriter, r *http.Request) {
 	raws, err := alarmStore.List()
 	if err != nil {
-		http.Error(w, "Failed to list alarms", http.StatusInternalServerError)
+		jsonError(w, "Failed to list alarms", http.StatusInternalServerError)
 		return
 	}
 	var alarms []datapkg.Alarm
@@ -132,7 +149,7 @@ func listAlarmsHandler(w http.ResponseWriter, r *http.Request) {
 func listEventsHandler(w http.ResponseWriter, r *http.Request) {
 	raws, err := eventStore.List()
 	if err != nil {
-		http.Error(w, "Failed to list events", http.StatusInternalServerError)
+		jsonError(w, "Failed to list events", http.StatusInternalServerError)
 		return
 	}
 	var events []datapkg.Event
