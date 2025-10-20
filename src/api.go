@@ -89,7 +89,7 @@ func getAlarmCountdownHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":              id,
 		"countdown":       seconds,
-		"countdown_human": humanized,
+		"countdown_detailed": humanized,
 		"alarm":           alarm,
 	})
 }
@@ -138,7 +138,7 @@ func getEventElapsedHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"elapsed":       seconds,
-		"elapsed_human": humanized,
+		"elapsed_detailed": humanized,
 		"event":         event,
 	})
 }

@@ -18,7 +18,11 @@ Content-Type: application/json
 ### Get Alarm Countdown
 ```
 GET /alarms/countdown?id=alarm1
-Response: { "id": "alarm1", "countdown": 3599.99 }
+Response: {
+  "id": "alarm1",
+  "countdown": 3599.99,
+  "countdown_detailed": "59 minutes, 59 seconds"
+}
 ```
 
 ### Create an Event
@@ -33,7 +37,11 @@ Content-Type: application/json
 ### Get Event Elapsed Time
 ```
 GET /events/elapsed?id=event1
-Response: { "id": "event1", "elapsed": 2.01 }
+Response: {
+  "id": "event1",
+  "elapsed": 2.01,
+  "elapsed_detailed": "2 seconds"
+}
 ```
 
 ## Running the Service
@@ -50,4 +58,4 @@ Response: { "id": "event1", "elapsed": 2.01 }
 
 ## Notes
 - All alarms and events are persisted in the SQLite database.
-- Time values are in seconds.
+- Time values are in seconds and also provided in a human-readable format.
