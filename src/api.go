@@ -84,8 +84,14 @@ func getAlarmCountdownHandler(w http.ResponseWriter, r *http.Request) {
 	if seconds < 0 {
 		seconds = 0
 	}
+	humanized := services.HumanizeDuration(seconds)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"id": id, "countdown": seconds, "alarm": alarm})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id":              id,
+		"countdown":       seconds,
+		"countdown_human": humanized,
+		"alarm":           alarm,
+	})
 }
 
 func createEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -127,8 +133,14 @@ func getEventElapsedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	elapsed := time.Since(event.StartedAt)
+	seconds := elapsed.Seconds()
+	humanized := services.HumanizeDuration(seconds)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"elapsed": elapsed.Seconds(), "event": event})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"elapsed":       seconds,
+		"elapsed_human": humanized,
+		"event":         event,
+	})
 }
 
 func listAlarmsHandler(w http.ResponseWriter, r *http.Request) {
